@@ -3,61 +3,215 @@
     <head>
         <title>VD1</title>
         <style>
+            * {
+                box-sizing: border-box;
+                margin: 0;
+                padding: 0;
+            }
+
+            a {
+                color: #f38181;
+            }
+
             body {
                 display: flex;
                 flex-direction: column;
                 align-items: center;
-                padding: 2em;
-                letter-spacing: -0.011em;
                 font-family: sans-serif;
                 font-size: 16px;
-                color: #34495e;
+                color: #222831;
                 background: #f8f9fa;
             }
 
+            h1 {
+                margin: 40px 0;
+                font-weight: 400;
+            }
+
             #wrapper {
-                background: #34495e;
-                border-radius: 5px;
+                background: #f6f6f6;
+                width: 100%;
+                padding: 20px 0;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
             }
 
             #wrapper2 {
-                background: #34495e;
-                border-radius: 5px;
-                margin-top: 20px;
-            }
-            
-            svg {
-                fill: #fff;
-                display: block;
+                width: 100%;
+                padding: 20px 0;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                background: #f6f6f6;
             }
 
+            #wrapper3 {
+                width: 100%;
+                padding: 20px 0;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+            }
+
+
+            svg {
+                fill:#222831;
+                display: block;
+            }
+            
             .description {
-                width: 800px;
+                width: 900px;
+                padding: 10px;
+                border-bottom: 1px solid #ffc7c7;
+                margin-bottom: 20px;
+            }
+
+            .vars {
+                display: flex;
+                justify-content: flex-start;
+                align-items: center;
+            }
+
+            .vars p {
+                background: #8785a2;
+                color: #f9f9f9;
+                padding: 2px 5px;
+                border-radius: 3px;
+                margin-left: 5px;
+                font-size: 14px;
+            }
+
+            .encoding {
+                margin-top: 10px;
+                line-height: 1.5;
+            }
+
+            .findings {
+                margin-top: 10px;
+                line-height: 1.5;
+            }
+
+            .chart-title {
+                font-size: 24px;
+                margin-bottom: 10px;
+            }
+
+            .footer {
+                margin: 30px 0;
             }
         </style>
     </head>
     <body>
-        <div id="wrapper"></div>
-        <p class="description">In this visualization I used the diverging bar chart idea.</p>
-        <div id="wrapper2"></div>
-        <p class="description">Hi</p>
+        <h1>Ehsan Jahangirzadeh Sorue | CS889</h1>
+        <div id="wrapper">
+            <div class="description">
+                <div class="vars">Variables: <p>Age</p><p>Sex</p><p>Income</p></div>
+                <div class="encoding">Encoding: Age is encoded as a x-axis as it is like a time so it makes sense to use it as a timeline. Sex is encoded as a color in the visualization, so green bars show data for male and the red ones represent data related to female. Income is encoded as median of all data for an age, so it demonstrates that either an age group's median gets more than 50K a year or not.</div>
+                <div class="findings">Findings: The visualization shows that median for most of the age groups is not higher than 50K and only men in the range of 45 to 47 have a higher median. It also demonstrates that income median for women is only higher than 50K in the 87 years old group which is kind of surprising.</div>
+            </div>
+            <div class="chart-title">When I will be rich?</div>
+        </div>
+                
+        <div id="wrapper3"> 
+            <div class="description">
+                <div class="vars">Variables: <p>Age</p><p>Sex</p><p>Income</p></div>
+                <div class="encoding">Encoding: Age and Sex are encoded exactly the same way as the previous visualization. Income is encoded as height of the bars whic shows the portion of men or women with a lower or higher income than 50K.</div>
+                <div class="findings">Findings: We can see a for the same age group men has a higher income reported. Actually we cannot conclude that men have higher income but we can claim that in the same age group more men have higher income than women.</div>
+            </div>
+            <div class="chart-title">Does your gender effect your income?</div>
+        </div>
+
+        <div id="wrapper2">
+            <div class="description">
+                <div class="vars">Variables: <p>Income</p><p>Sex</p><p>Occupation</p></div>
+                <div class="encoding">Encoding: In this visualiztion all variables work as a category and the thickness of each curve shows number of data points in each category whcih gets divided by every category.</div>
+                <div class="findings">Findings: Based on this vis we can see that good portion of male workers with Prof-speciality or Exec-managerial have >50K income. Also, most of the other occupations pay less in contrast to those two.</div>
+            </div>
+            <div class="chart-title">Who pays more?</div>
+        </div>
+
+        <div class="footer">
+            <p>Attribution: The third visualiztion is based on the <a href="https://observablehq.com/@d3/parallel-sets">Parallel Sets</a></p>
+        </div>
+
+       
         <script src="//d3js.org/d3.v6.min.js"></script>
-        <script src="//cdnjs.cloudflare.com/ajax/libs/ramda/0.25.0/ramda.min.js"></script>
+        <script src="//unpkg.com/d3-sankey@0"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/ramda/0.27.0/ramda.min.js"></script>
         <script>
             function prepDataAvgIncomeByAgeAndGender(data) {
-                console.log(data)
                 const genderBasedIncomeAvg = {}
                 for (const property in data) {
                     const maleData = R.filter(R.propEq('sex', 'Male'), data[property]);
                     const femaleData = R.filter(R.propEq('sex', 'Female'), data[property]);
                     
                     const incomeOccurrences = R.compose(R.length, R.filter(R.pathEq(['income'], '<=50K')))
-                    const maleAvg = incomeOccurrences(maleData) / maleData.length > .5 ? "<=50K" : ">50k";
-                    const femaleAvg = incomeOccurrences(femaleData) / femaleData.length > .5 ? "<=50K" : ">50k";
+                    const maleAvg = incomeOccurrences(maleData) / maleData.length > .5 ? "<=50K" : ">50K";
+                    const femaleAvg = incomeOccurrences(femaleData) / femaleData.length > .5 ? "<=50K" : ">50K";
 
                     genderBasedIncomeAvg[property] = {maleAvg, femaleAvg, age: property};
                 }
                 return genderBasedIncomeAvg;
+            }
+
+            function prepDataAvgIncomeByAgeAndGenderV2(data) {
+                const genderBasedIncomeAvg = {}
+                for (const property in data) {
+                    const maleData = R.filter(R.propEq('sex', 'Male'), data[property]);
+                    const femaleData = R.filter(R.propEq('sex', 'Female'), data[property]);
+                    
+                    const incomeOccurrences = R.compose(R.length, R.filter(R.pathEq(['income'], '<=50K')))
+                    const maleLowIncome = incomeOccurrences(maleData) / maleData.length;
+                    const femaleLowIncome = incomeOccurrences(femaleData) / femaleData.length;
+
+                    genderBasedIncomeAvg[property] = {maleLowIncome, femaleLowIncome, maleHighIncome: 1 - maleLowIncome, femaleHighIncome: 1 - femaleLowIncome ,age: property};
+                }
+                return genderBasedIncomeAvg;
+            }
+
+            function prepDataNumberOfPeopleWithHighIncomePerCountry(data) {
+                const keys = ["income", "sex", "occupation"]
+                let index = -1;
+                const nodes = [];
+                const nodeByKey = new Map;
+                const indexByKey = new Map;
+                const links = [];
+
+                for (const k of keys) {
+                    for (const d of data) {
+                    const key = JSON.stringify([k, d[k]]);
+                    if (nodeByKey.has(key)) continue;
+                    const node = {name: d[k]};
+                    nodes.push(node);
+                    nodeByKey.set(key, node);
+                    indexByKey.set(key, ++index);
+                    }
+                }
+
+                for (let i = 1; i < keys.length; ++i) {
+                    const a = keys[i - 1];
+                    const b = keys[i];
+                    const prefix = keys.slice(0, i + 1);
+                    const linkByKey = new Map;
+                    for (const d of data) {
+                    const names = prefix.map(k => d[k]);
+                    const key = JSON.stringify(names);
+                    const value = d.value || 1;
+                    let link = linkByKey.get(key);
+                    if (link) { link.value += value; continue; }
+                    link = {
+                        source: indexByKey.get(JSON.stringify([a, d[a]])),
+                        target: indexByKey.get(JSON.stringify([b, d[b]])),
+                        names,
+                        value
+                    };
+                    links.push(link);
+                    linkByKey.set(key, link);
+                    }
+                }
+
+                return {nodes, links};
             }
 
             async function drawBars() {
@@ -72,7 +226,7 @@
 
                 // 2. Create chart dimensions
 
-                const width = 800;
+                const width = 900;
                 let dimensions = {
                     width: width,
                     height: width * 0.5,
@@ -145,11 +299,11 @@
                     .attr("stroke-width", "0")
                     .call(selection => selection
                             .selectAll('text')
-                            .attr('fill', '#fff')
+                            .attr('fill', '#222831')
                             .attr('dy', '11'));
 
                 bounds.append("g").append('line')
-                    .style("stroke", "#eaeaea")
+                    .style("stroke", "#222831")
                     .style("stroke-width", 1)
                     .attr("x1", 25)
                     .attr("y1", dimensions.boundedHeight / 2 + 20)
@@ -157,7 +311,7 @@
                     .attr("y2", dimensions.boundedHeight / 2 + 20); 
 
                 bounds.append("g").append('line')
-                    .style("stroke", "#eaeaea")
+                    .style("stroke", "#222831")
                     .style("stroke-width", 1)
                     .attr("x1", 25)
                     .attr("y1", dimensions.boundedHeight / 2)
@@ -181,7 +335,7 @@
                     .attr("text-anchor", "end")
                     .attr("x", 5)
                     .attr("y", dimensions.boundedHeight / 2 + 100)
-                    .text(">50k");
+                    .text(">50K");
 
                 bounds.append("text")
                     .attr("text-anchor", "end")
@@ -198,22 +352,21 @@
             }
             drawBars();
 
-            async function drawBars2() {
+            async function drawSankey() {
                 // 1. Access data & pre-process data
                 const rawDataset = await d3.csv("income_evaluation.csv");
                 const columns = rawDataset.columns;
-                const groupDataByKeys = R.mergeAll(columns.map(c => ({[c]: R.groupBy(R.prop(c), rawDataset)})))
 
-                const data = prepDataAvgIncomeByAgeAndGender(groupDataByKeys.age);
-                const keys = R.keys(data);
-                const numberOfKeys = keys.length;
+                const graph = prepDataNumberOfPeopleWithHighIncomePerCountry(rawDataset);
+                
 
                 // 2. Create chart dimensions
 
-                const width = 800;
+                const width = 900;
+                const height = width * 0.8;
                 let dimensions = {
                     width: width,
-                    height: width * 0.5,
+                    height: height,
                     margin: {
                     top: 30,
                     right: 10,
@@ -243,6 +396,108 @@
 
                 // 4. Create scales
 
+                const sankey = d3.sankey()
+                    .nodeSort(null)
+                    .linkSort(null)
+                    .nodeWidth(4)
+                    .nodePadding(20)
+                    .extent([[0, 5], [width, height - 5]])
+                
+                const {nodes, links} = sankey({
+                    nodes: graph.nodes.map(d => Object.assign({}, d)),
+                    links: graph.links.map(d => Object.assign({}, d))
+                });
+
+                const color = d3.scaleOrdinal([">50K"], ["#95e1d3"]).unknown("#ccc")
+
+
+                // // 5. Draw data
+                wrapper.append("g")
+                    .selectAll("rect")
+                    .data(nodes)
+                    .join("rect")
+                    .attr("x", d => d.x0)
+                    .attr("y", d => d.y0)
+                    .attr("height", d => d.y1 - d.y0)
+                    .attr("width", d => d.x1 - d.x0)
+                    .append("title")
+                    .text(d => `${d.name}\n${d.value.toLocaleString()}`);
+
+                wrapper.append("g")
+                    .attr("fill", "none")
+                    .selectAll("g")
+                    .data(links)
+                    .join("path")
+                    .attr("d", d3.sankeyLinkHorizontal())
+                    .attr("stroke", d => color(d.names[0]))
+                    .attr("stroke-width", d => d.width)
+                    .style("mix-blend-mode", "multiply")
+                    .append("title")
+                    .text(d => `${d.names.join(" → ")}\n${d.value.toLocaleString()}`);
+
+                const textNode = wrapper.append("g")
+                    .style("font", "10px sans-serif")
+                    .selectAll("text")
+                    .data(nodes)
+                    .join("text")
+                    .attr("x", d => d.x0 < width / 2 ? d.x1 + 6 : d.x0 - 6)
+                    .attr("y", d => (d.y1 + d.y0) / 2)
+                    .attr("dy", "0.35em")
+                    .attr("text-anchor", d => d.x0 < width / 2 ? "start" : "end")
+                    .text(d => d.name)
+                    .append("tspan")
+                    .attr("fill-opacity", 0.7)
+                    .text(d => ` ${d.value.toLocaleString()}`);
+
+            }
+            drawSankey();
+
+            async function drawBarsV2() {
+                // 1. Access data & pre-process data
+                const rawDataset = await d3.csv("income_evaluation.csv");
+                const columns = rawDataset.columns;
+                const groupDataByKeys = R.mergeAll(columns.map(c => ({[c]: R.groupBy(R.prop(c), rawDataset)})))
+
+                const data = prepDataAvgIncomeByAgeAndGenderV2(groupDataByKeys.age);
+                console.log(data)
+                const keys = R.keys(data);
+                const numberOfKeys = keys.length;
+
+                // 2. Create chart dimensions
+
+                const width = 900;
+                let dimensions = {
+                    width: width,
+                    height: width * 0.5,
+                    margin: {
+                    top: 30,
+                    right: 10,
+                    bottom: 0,
+                    left: 50,
+                    },
+                };
+                dimensions.boundedWidth =
+                    dimensions.width - dimensions.margin.left - dimensions.margin.right;
+                dimensions.boundedHeight =
+                    dimensions.height - dimensions.margin.top - dimensions.margin.bottom;
+
+                // // 3. Draw canvas
+
+                const wrapper = d3
+                    .select("#wrapper3")
+                    .append("svg")
+                    .attr("width", dimensions.width)
+                    .attr("height", dimensions.height);
+
+                const bounds = wrapper
+                    .append("g")
+                    .style(
+                    "transform",
+                    `translate(${dimensions.margin.left}px, ${dimensions.margin.top}px)`
+                    );
+
+                // 4. Create scales
+
                 const xScale = d3
                     .scaleLinear()
                     .domain(d3.extent(keys))
@@ -256,20 +511,40 @@
                     .selectAll("rect")
                     .data(R.values(data))
                     .join("rect")
-                    .attr("x", (d, i) => xScale(d.age) + dimensions.margin.left)
-                    .attr("y", d => (d.maleAvg === "<=50K" ? dimensions.boundedHeight / 2  - 50: dimensions.boundedHeight / 2 + 22) + dimensions.margin.top - 1)
+                    .attr("x", (d, i) => xScale(d.age) + dimensions.margin.left - 2)
+                    .attr("y", d => dimensions.boundedHeight / 2 - (100 * d.maleLowIncome)  + dimensions.margin.top - 1)
                     .attr("fill", colors.male)
-                    .attr("height", 50)
+                    .attr("height", d => 100 * d.maleLowIncome)
+                    .attr("width", 4);
+                
+                wrapper.append("g")
+                    .selectAll("rect")
+                    .data(R.values(data))
+                    .join("rect")
+                    .attr("x", (d, i) => xScale(d.age) + dimensions.margin.left - 2)
+                    .attr("y", d => dimensions.boundedHeight / 2 + 20 + dimensions.margin.top + 1)
+                    .attr("fill", colors.male)
+                    .attr("height", d => 100 * d.maleHighIncome)
                     .attr("width", 4);
 
                 wrapper.append("g")
                     .selectAll("rect")
                     .data(R.values(data))
                     .join("rect")
-                    .attr("x", (d, i) => xScale(d.age) + dimensions.margin.left)
-                    .attr("y", d => (d.femaleAvg === "<=50K" ? dimensions.boundedHeight / 2  - 100: dimensions.boundedHeight / 2 + 72) + dimensions.margin.top - 1)
+                    .attr("x", (d, i) => xScale(d.age) + dimensions.margin.left + 2)
+                    .attr("y", d => dimensions.boundedHeight / 2 - (100 * d.femaleLowIncome)  + dimensions.margin.top - 1)
                     .attr("fill", colors.female)
-                    .attr("height", 50)
+                    .attr("height", d => 100 * d.femaleLowIncome)
+                    .attr("width", 4);
+                
+                wrapper.append("g")
+                    .selectAll("rect")
+                    .data(R.values(data))
+                    .join("rect")
+                    .attr("x", (d, i) => xScale(d.age) + dimensions.margin.left + 2)
+                    .attr("y", d => dimensions.boundedHeight / 2 + 20 + dimensions.margin.top + 1)
+                    .attr("fill", colors.female)
+                    .attr("height", d => 100 * d.femaleHighIncome)
                     .attr("width", 4);
 
                 // // 6. Draw peripherals
@@ -283,11 +558,11 @@
                     .attr("stroke-width", "0")
                     .call(selection => selection
                             .selectAll('text')
-                            .attr('fill', '#fff')
+                            .attr('fill', '#222831')
                             .attr('dy', '11'));
 
                 bounds.append("g").append('line')
-                    .style("stroke", "#eaeaea")
+                    .style("stroke", "#222831")
                     .style("stroke-width", 1)
                     .attr("x1", 25)
                     .attr("y1", dimensions.boundedHeight / 2 + 20)
@@ -295,7 +570,7 @@
                     .attr("y2", dimensions.boundedHeight / 2 + 20); 
 
                 bounds.append("g").append('line')
-                    .style("stroke", "#eaeaea")
+                    .style("stroke", "#222831")
                     .style("stroke-width", 1)
                     .attr("x1", 25)
                     .attr("y1", dimensions.boundedHeight / 2)
@@ -305,7 +580,7 @@
                 // Add X axis label:
                 bounds.append("text")
                     .attr("text-anchor", "end")
-                    .attr("x", dimensions.boundedWidth)
+                    .attr("x", dimensions.boundedWidth - 10)
                     .attr("y", dimensions.boundedHeight / 2 + 15)
                     .text("Age");
 
@@ -319,7 +594,7 @@
                     .attr("text-anchor", "end")
                     .attr("x", 5)
                     .attr("y", dimensions.boundedHeight / 2 + 100)
-                    .text(">50k");
+                    .text(">50K");
 
                 bounds.append("text")
                     .attr("text-anchor", "end")
@@ -334,7 +609,7 @@
                 wrapper.append("text").attr("x", dimensions.boundedWidth).attr("y", 70).text("Female").style("font-size", "15px").attr("alignment-baseline","middle")
 
             }
-            drawBars2();
+            drawBarsV2();
         </script>
     </body>
 </html>
