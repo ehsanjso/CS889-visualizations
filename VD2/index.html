@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
     <head>
-        <title>VD1</title>
+        <title>VD2</title>
         <style>
             * {
                 box-sizing: border-box;
@@ -27,6 +27,12 @@
                 margin: 40px 0;
                 font-weight: 400;
                 color: #364f6b;
+            }
+
+            .chart-wrapper {
+                width: 900px;
+                position: relative;
+
             }
 
             #wrapper {
@@ -102,6 +108,41 @@
             .footer {
                 margin: 30px 0;
             }
+
+            .tooltip {
+                opacity: 0;
+                position: absolute;
+                top: -12px;
+                left: 0;
+                padding: 0.6em 1em;
+                background: #fff;
+                text-align: center;
+                border: 1px solid #ddd;
+                z-index: 10;
+                transition: all 0.2s ease-out;
+                pointer-events: none;
+            }
+
+            .tooltip:before {
+                content: '';
+                position: absolute;
+                bottom: 0;
+                left: 50%;
+                width: 12px;
+                height: 12px;
+                background: white;
+                border: 1px solid #ddd;
+                border-top-color: transparent;
+                border-left-color: transparent;
+                transform: translate(-50%, 50%) rotate(45deg);
+                transform-origin: center center;
+                z-index: 10;
+            }
+
+            .tooltip-range {
+                margin-bottom: 0.2em;
+                font-weight: 600;
+            }
         </style>
     </head>
     <body>
@@ -113,6 +154,17 @@
                 <div class="findings">Findings: The visualization shows that median for most of the age groups is not higher than 50K and only men in the range of 45 to 47 have a higher median. It also demonstrates that income median for women is only higher than 50K in the 87 years old group which is kind of surprising. For this visualization and the next one, I tried to use the diverging bar chart whithin a different type of data.</div>
             </div>
             <div class="chart-title">When will I be rich?</div>
+            <div class="chart-wrapper">
+
+                <div id="tooltip" class="tooltip">
+                    <div class="tooltip-range">
+                        Humidity: <span id="range"></span>
+                    </div>
+                    <div class="tooltip-value">
+                        <span id="count"></span> days
+                    </div>
+                </div>
+            </div> 
         </div>
                 
         <div id="wrapper3"> 
@@ -122,6 +174,17 @@
                 <div class="findings">Findings: We can see a for the same age group men has a higher income reported. Actually we cannot conclude that men have higher income but we can claim that in the same age group more men have higher income than women.</div>
             </div>
             <div class="chart-title">Does your gender effect your income?</div>
+            <div class="chart-wrapper">
+
+                <div id="tooltip2" class="tooltip">
+                    <div class="tooltip-range">
+                        Humidity: <span id="range"></span>
+                    </div>
+                    <div class="tooltip-value">
+                        <span id="count"></span> days
+                    </div>
+                </div>
+            </div> 
         </div>
 
         <div id="wrapper2">
@@ -142,6 +205,9 @@
         <script src="//unpkg.com/d3-sankey@0"></script>
         <script src="//cdnjs.cloudflare.com/ajax/libs/ramda/0.27.0/ramda.min.js"></script>
         <script>
+            const colors = {male: "#95e1d3", female: "#f38181"};
+
+
             function prepDataAvgIncomeByAgeAndGender(data) {
                 const genderBasedIncomeAvg = {}
                 for (const property in data) {
@@ -172,8 +238,7 @@
                 return genderBasedIncomeAvg;
             }
 
-            function prepDataNumberOfPeopleWithHighIncomePerCountry(data) {
-                const keys = ["income", "sex", "occupation"]
+            function prepDataNumberOfPeopleWithHighIncomePerCountry(data, keys) {
                 let index = -1;
                 const nodes = [];
                 const nodeByKey = new Map;
@@ -216,22 +281,31 @@
                 return {nodes, links};
             }
 
-            async function drawBars() {
+            async function drawCharts() {
                 // 1. Access data & pre-process data
                 const rawDataset = await d3.csv("income_evaluation.csv");
                 const columns = rawDataset.columns;
                 const groupDataByKeys = R.mergeAll(columns.map(c => ({[c]: R.groupBy(R.prop(c), rawDataset)})))
-
+                // first chart 
                 const data = prepDataAvgIncomeByAgeAndGender(groupDataByKeys.age);
                 const keys = R.keys(data);
                 const numberOfKeys = keys.length;
-
+                
+                // second chart
+                const data2 = prepDataAvgIncomeByAgeAndGenderV2(groupDataByKeys.age);
+                const keys2 = R.keys(data2);
+                const numberOfKeys2 = keys2.length;
+                // third chart 
+                const graph = prepDataNumberOfPeopleWithHighIncomePerCountry(rawDataset, ["sex", "income", "occupation"]);
+                const graphWithAge = R.groupBy(el => R.toString(el.names), prepDataNumberOfPeopleWithHighIncomePerCountry(rawDataset, ["age", "sex", "income", "occupation"]).links);
                 // 2. Create chart dimensions
 
                 const width = 900;
+                
                 let dimensions = {
                     width: width,
                     height: width * 0.5,
+                    sankeyHeight: width * 0.8,
                     margin: {
                     top: 30,
                     right: 10,
@@ -245,7 +319,7 @@
                     dimensions.height - dimensions.margin.top - dimensions.margin.bottom;
 
                 // // 3. Draw canvas
-
+                // first chart 
                 const wrapper = d3
                     .select("#wrapper")
                     .append("svg")
@@ -259,6 +333,35 @@
                     `translate(${dimensions.margin.left}px, ${dimensions.margin.top}px)`
                     );
 
+                // second chart
+                const wrapper2 = d3
+                    .select("#wrapper3")
+                    .append("svg")
+                    .attr("width", dimensions.width)
+                    .attr("height", dimensions.height);
+
+                const bounds2 = wrapper2
+                    .append("g")
+                    .style(
+                    "transform",
+                    `translate(${dimensions.margin.left}px, ${dimensions.margin.top}px)`
+                    );
+
+                
+                // third chart 
+                const wrapper3 = d3
+                    .select("#wrapper2")
+                    .append("svg")
+                    .attr("width", dimensions.width)
+                    .attr("height", dimensions.sankeyHeight);
+
+                const bounds3 = wrapper3
+                    .append("g")
+                    .style(
+                    "transform",
+                    `translate(${dimensions.margin.left}px, ${dimensions.margin.top}px)`
+                    );
+
                 // 4. Create scales
 
                 const xScale = d3
@@ -266,29 +369,59 @@
                     .domain(d3.extent(keys))
                     .range([30, dimensions.boundedWidth - 70]);
 
-                // // 5. Draw data
+                const yScale = d3
+                    .scaleLinear()
+                    .domain([-1, 0])
+                    .range([dimensions.boundedWidth / 2 - 101, dimensions.boundedWidth / 2]);
 
-                const colors = {male: "#95e1d3", female: "#f38181"};
+                const yScale2 = d3
+                    .scaleLinear()
+                    .domain([0, 1])
+                    .range([dimensions.boundedWidth / 2, dimensions.boundedWidth / 2 + 101]);
+               
+                // third chart 
+
+                const sankey = d3.sankey()
+                    .nodeSort(null)
+                    .linkSort(null)
+                    .nodeWidth(4)
+                    .nodePadding(20)
+                    .extent([[0, 5], [dimensions.width, dimensions.sankeyHeight - 5]])
+                
+                const {nodes, links} = sankey({
+                    nodes: graph.nodes.map(d => Object.assign({}, d)),
+                    links: graph.links.map(d => Object.assign({}, d))
+                });
+
+                const color = d3.scaleOrdinal(["Male"], [colors.male]).unknown("#ccc")
+
+                // // 5. Draw data
 
                 wrapper.append("g")
                     .selectAll("rect")
                     .data(R.values(data))
                     .join("rect")
+                    .attr("class", d => `men-${d.age}`)
                     .attr("x", (d, i) => xScale(d.age) + dimensions.margin.left)
                     .attr("y", d => (d.maleAvg === "<=50K" ? dimensions.boundedHeight / 2  - 50: dimensions.boundedHeight / 2 + 22) + dimensions.margin.top - 1)
                     .attr("fill", colors.male)
                     .attr("height", 50)
-                    .attr("width", 4);
+                    .attr("width", 4)
+                    .on("mouseenter", onMouseEnter)
+                    .on("mouseleave", onMouseLeave);
 
                 wrapper.append("g")
                     .selectAll("rect")
                     .data(R.values(data))
                     .join("rect")
+                    .attr("class", d => `women-${d.age}`)
                     .attr("x", (d, i) => xScale(d.age) + dimensions.margin.left)
                     .attr("y", d => (d.femaleAvg === "<=50K" ? dimensions.boundedHeight / 2  - 100: dimensions.boundedHeight / 2 + 72) + dimensions.margin.top - 1)
                     .attr("fill", colors.female)
                     .attr("height", 50)
-                    .attr("width", 4);
+                    .attr("width", 4)
+                    .on("mouseenter", onMouseEnter)
+                    .on("mouseleave", onMouseLeave);
 
                 // // 6. Draw peripherals
 
@@ -351,70 +484,140 @@
                 wrapper.append("text").attr("x", dimensions.boundedWidth).attr("y", 50).text("Male").style("font-size", "15px").attr("alignment-baseline","middle")
                 wrapper.append("text").attr("x", dimensions.boundedWidth).attr("y", 70).text("Female").style("font-size", "15px").attr("alignment-baseline","middle")
 
-            }
-            drawBars();
-
-            async function drawSankey() {
-                // 1. Access data & pre-process data
-                const rawDataset = await d3.csv("income_evaluation.csv");
-                const columns = rawDataset.columns;
-
-                const graph = prepDataNumberOfPeopleWithHighIncomePerCountry(rawDataset);
-                
-
-                // 2. Create chart dimensions
-
-                const width = 900;
-                const height = width * 0.8;
-                let dimensions = {
-                    width: width,
-                    height: height,
-                    margin: {
-                    top: 30,
-                    right: 10,
-                    bottom: 0,
-                    left: 50,
-                    },
-                };
-                dimensions.boundedWidth =
-                    dimensions.width - dimensions.margin.left - dimensions.margin.right;
-                dimensions.boundedHeight =
-                    dimensions.height - dimensions.margin.top - dimensions.margin.bottom;
-
-                // // 3. Draw canvas
-
-                const wrapper = d3
-                    .select("#wrapper2")
-                    .append("svg")
-                    .attr("width", dimensions.width)
-                    .attr("height", dimensions.height);
-
-                const bounds = wrapper
-                    .append("g")
-                    .style(
-                    "transform",
-                    `translate(${dimensions.margin.left}px, ${dimensions.margin.top}px)`
-                    );
-
-                // 4. Create scales
-
-                const sankey = d3.sankey()
-                    .nodeSort(null)
-                    .linkSort(null)
-                    .nodeWidth(4)
-                    .nodePadding(20)
-                    .extent([[0, 5], [width, height - 5]])
-                
-                const {nodes, links} = sankey({
-                    nodes: graph.nodes.map(d => Object.assign({}, d)),
-                    links: graph.links.map(d => Object.assign({}, d))
-                });
-
-                const color = d3.scaleOrdinal([">50K"], ["#95e1d3"]).unknown("#ccc")
-
 
                 // // 5. Draw data
-                wrapper.append("g")
+
+                wrapper2.append("g")
+                    .selectAll("rect")
+                    .data(R.values(data2))
+                    .join("rect")
+                    .attr("class", d => `men-${d.age}`)
+                    .attr("x", (d, i) => xScale(d.age) + dimensions.margin.left - 2)
+                    .attr("y", d => d.maleLowIncome ? dimensions.boundedHeight / 2 - (100 * d.maleLowIncome)  + dimensions.margin.top - 1 : 0)
+                    .attr("fill", colors.male)
+                    .attr("height", d => d.maleLowIncome ? 100 * d.maleLowIncome : 0)
+                    .attr("width", 4)
+                    .on("mouseenter", onMouseEnter)
+                    .on("mouseleave", onMouseLeave);
+                
+                wrapper2.append("g")
+                    .selectAll("rect")
+                    .data(R.values(data2))
+                    .join("rect")
+                    .attr("class", d => `men-${d.age}`)
+                    .attr("x", (d, i) => xScale(d.age) + dimensions.margin.left - 2)
+                    .attr("y", d => dimensions.boundedHeight / 2 + 20 + dimensions.margin.top + 1)
+                    .attr("fill", colors.male)
+                    .attr("height", d => d.maleHighIncome ? 100 * d.maleHighIncome : 0)
+                    .attr("width", 4)
+                    .on("mouseenter", onMouseEnter)
+                    .on("mouseleave", onMouseLeave);
+
+                wrapper2.append("g")
+                    .selectAll("rect")
+                    .data(R.values(data2))
+                    .join("rect")
+                    .attr("class", d => `women-${d.age}`)
+                    .attr("x", (d, i) => xScale(d.age) + dimensions.margin.left + 2)
+                    .attr("y", d => d.femaleLowIncome ? dimensions.boundedHeight / 2 - (100 * d.femaleLowIncome)  + dimensions.margin.top - 1 : 0)
+                    .attr("fill", colors.female)
+                    .attr("height", d => d.femaleLowIncome ? 100 * d.femaleLowIncome : 0)
+                    .attr("width", 4)
+                    .on("mouseenter", onMouseEnter)
+                    .on("mouseleave", onMouseLeave);
+                
+                wrapper2.append("g")
+                    .selectAll("rect")
+                    .data(R.values(data2))
+                    .join("rect")
+                    .attr("class", d => `women-${d.age}`)
+                    .attr("x", (d, i) => xScale(d.age) + dimensions.margin.left + 2)
+                    .attr("y", d => dimensions.boundedHeight / 2 + 20 + dimensions.margin.top + 1)
+                    .attr("fill", colors.female)
+                    .attr("height", d => d.femaleHighIncome ? 100 * d.femaleHighIncome : 0)
+                    .attr("width", 4)
+                    .on("mouseenter", onMouseEnter)
+                    .on("mouseleave", onMouseLeave);
+
+                // // 6. Draw peripherals
+
+                const xAxisGenerator2 = d3.axisBottom().scale(xScale).ticks(numberOfKeys2 / 2).tickSize(0);
+
+                const xAxis2 = bounds2
+                    .append("g")
+                    .call(xAxisGenerator)
+                    .style("transform", `translateY(${dimensions.boundedHeight / 2}px)`)
+                    .attr("stroke-width", "0")
+                    .call(selection => selection
+                            .selectAll('text')
+                            .attr('fill', '#222831')
+                            .attr('dy', '11'));
+
+                const yAxisGenerator = d3.axisLeft().scale(yScale).ticks(3).tickFormat(d => Math.abs(d));
+
+                const yAxis = bounds2
+                    .append("g")
+                    .call(yAxisGenerator)
+                    .style("transform", `translate(21px, -${dimensions.boundedHeight / 2}px)`)
+                    .attr("stroke-width", "1");
+
+                const yAxisGenerator2 = d3.axisLeft().scale(yScale2).ticks(3).tickFormat(d => Math.abs(d));
+
+                const yAxis2 = bounds2
+                    .append("g")
+                    .call(yAxisGenerator2)
+                    .style("transform", `translate(21px, -${dimensions.boundedHeight / 2 - 20}px)`)
+                    .attr("stroke-width", "1");
+
+                bounds2.append("g").append('line')
+                    .style("stroke", "#222831")
+                    .style("stroke-width", 1)
+                    .attr("x1", 25)
+                    .attr("y1", dimensions.boundedHeight / 2 + 20)
+                    .attr("x2", dimensions.boundedWidth - 60)
+                    .attr("y2", dimensions.boundedHeight / 2 + 20); 
+
+                bounds2.append("g").append('line')
+                    .style("stroke", "#222831")
+                    .style("stroke-width", 1)
+                    .attr("x1", 25)
+                    .attr("y1", dimensions.boundedHeight / 2)
+                    .attr("x2", dimensions.boundedWidth - 60)
+                    .attr("y2", dimensions.boundedHeight / 2); 
+
+                // Add X axis label:
+                bounds2.append("text")
+                    .attr("text-anchor", "end")
+                    .attr("x", dimensions.boundedWidth - 10)
+                    .attr("y", dimensions.boundedHeight / 2 + 15)
+                    .text("Age");
+
+                bounds2.append("text")
+                    .attr("text-anchor", "end")
+                    .attr("x", dimensions.boundedWidth / 2 )
+                    .attr("y", dimensions.boundedHeight / 2 - 110)
+                    .text("<=50K");
+
+                bounds2.append("text")
+                    .attr("text-anchor", "end")
+                    .attr("x", dimensions.boundedWidth / 2 )
+                    .attr("y", dimensions.boundedHeight / 2 + 110)
+                    .text(">50K");
+
+                bounds2.append("text")
+                    .attr("text-anchor", "end")
+                    .attr("transform", `translate(-15, ${dimensions.boundedHeight / 2 + 10})  rotate(-90)`)
+                    .attr("text-anchor", "middle")
+                    .text("Portion of people in each income group")
+                    ;
+
+                wrapper2.append("circle").attr("cx",dimensions.boundedWidth - 10).attr("cy",50).attr("r", 6).style("fill", colors.male)
+                wrapper2.append("circle").attr("cx",dimensions.boundedWidth - 10).attr("cy",70).attr("r", 6).style("fill", colors.female)
+                wrapper2.append("text").attr("x", dimensions.boundedWidth).attr("y", 50).text("Male").style("font-size", "15px").attr("alignment-baseline","middle")
+                wrapper2.append("text").attr("x", dimensions.boundedWidth).attr("y", 70).text("Female").style("font-size", "15px").attr("alignment-baseline","middle")
+
+                // // 5. Draw data
+                wrapper3.append("g")
                     .selectAll("rect")
                     .data(nodes)
                     .join("rect")
@@ -425,7 +628,7 @@
                     .append("title")
                     .text(d => `${d.name}\n${d.value.toLocaleString()}`);
 
-                wrapper.append("g")
+                wrapper3.append("g")
                     .attr("fill", "none")
                     .selectAll("g")
                     .data(links)
@@ -437,7 +640,7 @@
                     .append("title")
                     .text(d => `${d.names.join(" → ")}\n${d.value.toLocaleString()}`);
 
-                const textNode = wrapper.append("g")
+                const textNode = wrapper3.append("g")
                     .style("font", "10px sans-serif")
                     .selectAll("text")
                     .data(nodes)
@@ -451,192 +654,42 @@
                     .attr("fill-opacity", 0.7)
                     .text(d => ` ${d.value.toLocaleString()}`);
 
-            }
-            drawSankey();
+                function onMouseEnter(e, datum) {
+                    const isWomen = e.srcElement.classList[0].includes("women");
 
-            async function drawBarsV2() {
-                // 1. Access data & pre-process data
-                const rawDataset = await d3.csv("income_evaluation.csv");
-                const columns = rawDataset.columns;
-                const groupDataByKeys = R.mergeAll(columns.map(c => ({[c]: R.groupBy(R.prop(c), rawDataset)})))
+                    d3.selectAll(`rect.${isWomen ? "wo" : ""}men-${datum.age}`)
+                        .attr("fill", "#112d4e")
 
-                const data = prepDataAvgIncomeByAgeAndGenderV2(groupDataByKeys.age);
-                const keys = R.keys(data);
-                const numberOfKeys = keys.length;
+                    wrapper3.append("g")
+                        .attr("fill", "none")
+                        .selectAll("g.hover")
+                        .data(links)
+                        .join("path")
+                        .attr("class", "hover")
+                        .attr("d", d3.sankeyLinkHorizontal())
+                        .attr("stroke", d => "#112d4e")
+                        .attr("stroke-width", d => {
+                            const data = graphWithAge[R.toString([`${datum.age}` , `${isWomen ? "Female" : "Male"}`, ...(d.names.slice(1))])];
+                            return data ? d.width * (data[0].value / d.value) : 0})
+                        .style("mix-blend-mode", "multiply")
+                        .append("title")
+                        .text(d => `${d.names.join(" → ")}\n${d.value.toLocaleString()}`);
 
-                // 2. Create chart dimensions
+                }
 
-                const width = 900;
-                let dimensions = {
-                    width: width,
-                    height: width * 0.5,
-                    margin: {
-                    top: 30,
-                    right: 10,
-                    bottom: 0,
-                    left: 50,
-                    },
-                };
-                dimensions.boundedWidth =
-                    dimensions.width - dimensions.margin.left - dimensions.margin.right;
-                dimensions.boundedHeight =
-                    dimensions.height - dimensions.margin.top - dimensions.margin.bottom;
+                function onMouseLeave(e, datum) {
+                    const isWomen = e.srcElement.classList[0].includes("women");
 
-                // // 3. Draw canvas
+                    d3.selectAll(`rect.${isWomen ? "wo" : ""}men-${datum.age}`)
+                        .attr("fill", isWomen ? colors.female : colors.male)
 
-                const wrapper = d3
-                    .select("#wrapper3")
-                    .append("svg")
-                    .attr("width", dimensions.width)
-                    .attr("height", dimensions.height);
-
-                const bounds = wrapper
-                    .append("g")
-                    .style(
-                    "transform",
-                    `translate(${dimensions.margin.left}px, ${dimensions.margin.top}px)`
-                    );
-
-                // 4. Create scales
-
-                const xScale = d3
-                    .scaleLinear()
-                    .domain(d3.extent(keys))
-                    .range([30, dimensions.boundedWidth - 70]);
-
-                const yScale = d3
-                    .scaleLinear()
-                    .domain([-1, 0])
-                    .range([dimensions.boundedWidth / 2 - 101, dimensions.boundedWidth / 2]);
-
-                const yScale2 = d3
-                    .scaleLinear()
-                    .domain([0, 1])
-                    .range([dimensions.boundedWidth / 2, dimensions.boundedWidth / 2 + 101]);
-
-                // // 5. Draw data
-
-                const colors = {male: "#95e1d3", female: "#f38181"};
-
-                wrapper.append("g")
-                    .selectAll("rect")
-                    .data(R.values(data))
-                    .join("rect")
-                    .attr("x", (d, i) => xScale(d.age) + dimensions.margin.left - 2)
-                    .attr("y", d => dimensions.boundedHeight / 2 - (100 * d.maleLowIncome)  + dimensions.margin.top - 1)
-                    .attr("fill", colors.male)
-                    .attr("height", d => 100 * d.maleLowIncome)
-                    .attr("width", 4);
-                
-                wrapper.append("g")
-                    .selectAll("rect")
-                    .data(R.values(data))
-                    .join("rect")
-                    .attr("x", (d, i) => xScale(d.age) + dimensions.margin.left - 2)
-                    .attr("y", d => dimensions.boundedHeight / 2 + 20 + dimensions.margin.top + 1)
-                    .attr("fill", colors.male)
-                    .attr("height", d => 100 * d.maleHighIncome)
-                    .attr("width", 4);
-
-                wrapper.append("g")
-                    .selectAll("rect")
-                    .data(R.values(data))
-                    .join("rect")
-                    .attr("x", (d, i) => xScale(d.age) + dimensions.margin.left + 2)
-                    .attr("y", d => dimensions.boundedHeight / 2 - (100 * d.femaleLowIncome)  + dimensions.margin.top - 1)
-                    .attr("fill", colors.female)
-                    .attr("height", d => 100 * d.femaleLowIncome)
-                    .attr("width", 4);
-                
-                wrapper.append("g")
-                    .selectAll("rect")
-                    .data(R.values(data))
-                    .join("rect")
-                    .attr("x", (d, i) => xScale(d.age) + dimensions.margin.left + 2)
-                    .attr("y", d => dimensions.boundedHeight / 2 + 20 + dimensions.margin.top + 1)
-                    .attr("fill", colors.female)
-                    .attr("height", d => 100 * d.femaleHighIncome)
-                    .attr("width", 4);
-
-                // // 6. Draw peripherals
-
-                const xAxisGenerator = d3.axisBottom().scale(xScale).ticks(numberOfKeys / 2).tickSize(0);
-
-                const xAxis = bounds
-                    .append("g")
-                    .call(xAxisGenerator)
-                    .style("transform", `translateY(${dimensions.boundedHeight / 2}px)`)
-                    .attr("stroke-width", "0")
-                    .call(selection => selection
-                            .selectAll('text')
-                            .attr('fill', '#222831')
-                            .attr('dy', '11'));
-
-                const yAxisGenerator = d3.axisLeft().scale(yScale).ticks(3).tickFormat(d => Math.abs(d));
-
-                const yAxis = bounds
-                    .append("g")
-                    .call(yAxisGenerator)
-                    .style("transform", `translate(21px, -${dimensions.boundedHeight / 2}px)`)
-                    .attr("stroke-width", "1");
-
-                const yAxisGenerator2 = d3.axisLeft().scale(yScale2).ticks(3).tickFormat(d => Math.abs(d));
-
-                const yAxis2 = bounds
-                    .append("g")
-                    .call(yAxisGenerator2)
-                    .style("transform", `translate(21px, -${dimensions.boundedHeight / 2 - 20}px)`)
-                    .attr("stroke-width", "1");
-
-                bounds.append("g").append('line')
-                    .style("stroke", "#222831")
-                    .style("stroke-width", 1)
-                    .attr("x1", 25)
-                    .attr("y1", dimensions.boundedHeight / 2 + 20)
-                    .attr("x2", dimensions.boundedWidth - 60)
-                    .attr("y2", dimensions.boundedHeight / 2 + 20); 
-
-                bounds.append("g").append('line')
-                    .style("stroke", "#222831")
-                    .style("stroke-width", 1)
-                    .attr("x1", 25)
-                    .attr("y1", dimensions.boundedHeight / 2)
-                    .attr("x2", dimensions.boundedWidth - 60)
-                    .attr("y2", dimensions.boundedHeight / 2); 
-
-                // Add X axis label:
-                bounds.append("text")
-                    .attr("text-anchor", "end")
-                    .attr("x", dimensions.boundedWidth - 10)
-                    .attr("y", dimensions.boundedHeight / 2 + 15)
-                    .text("Age");
-
-                bounds.append("text")
-                    .attr("text-anchor", "end")
-                    .attr("x", dimensions.boundedWidth / 2 )
-                    .attr("y", dimensions.boundedHeight / 2 - 110)
-                    .text("<=50K");
-
-                bounds.append("text")
-                    .attr("text-anchor", "end")
-                    .attr("x", dimensions.boundedWidth / 2 )
-                    .attr("y", dimensions.boundedHeight / 2 + 110)
-                    .text(">50K");
-
-                bounds.append("text")
-                    .attr("text-anchor", "end")
-                    .attr("transform", `translate(-15, ${dimensions.boundedHeight / 2 + 10})  rotate(-90)`)
-                    .attr("text-anchor", "middle")
-                    .text("Portion of people in each income group")
-                    ;
-
-                wrapper.append("circle").attr("cx",dimensions.boundedWidth - 10).attr("cy",50).attr("r", 6).style("fill", colors.male)
-                wrapper.append("circle").attr("cx",dimensions.boundedWidth - 10).attr("cy",70).attr("r", 6).style("fill", colors.female)
-                wrapper.append("text").attr("x", dimensions.boundedWidth).attr("y", 50).text("Male").style("font-size", "15px").attr("alignment-baseline","middle")
-                wrapper.append("text").attr("x", dimensions.boundedWidth).attr("y", 70).text("Female").style("font-size", "15px").attr("alignment-baseline","middle")
+                    wrapper3.selectAll(".hover")
+                        .remove()
+                }
 
             }
-            drawBarsV2();
+            drawCharts();
+            
         </script>
     </body>
 </html>
