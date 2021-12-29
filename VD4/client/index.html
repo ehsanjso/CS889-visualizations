@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Visualization Design 2</title>
+</head>
+<body>
+  <div class="container">
+    <div class="row">
+      <div id="wrapper-text" class="wrapper">
+        <div class="text-container">
+          <h1>Ehsan Jahangirzadeh Sorue | 20897765 | ejahangi | CS889</h1>
+          <p>I used PCA, TSNE, and MDS for dimmension reduction. To visualize the results, the final values from each algorithm is aggregated to a point in the scatter plot. For the interactions, I used a voronoi to capture the users cursor position on each scatter plot and show a tooltip of each data point. </p>  
+        </div>
+      </div>
+      <div id="wrapper-pca" class="wrapper">
+        <div id="tooltip-pca" class="tooltip">
+            <div class="tooltip-temperature">
+                <span id="max-temperature"></span>
+            </div>
+        </div>
+      </div>
+    </div>
+  
+    <div class="row">
+      <div id="wrapper-tsne" class="wrapper">
+        <div id="tooltip-tsne" class="tooltip">
+            <div class="tooltip-temperature">
+                <span id="max-temperature"></span>
+            </div>
+        </div>
+      </div>
+      <div id="wrapper-mds" class="wrapper">
+        <div id="tooltip-mds" class="tooltip">
+            <div class="tooltip-temperature">
+                <span id="max-temperature"></span>
+            </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>
